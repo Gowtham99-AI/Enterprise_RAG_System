@@ -6,6 +6,9 @@ from enterprise_rag_platform.api.routes.documents import router as documents_rou
 from enterprise_rag_platform.api.routes.health import router as health_router
 from enterprise_rag_platform.api.routes.search import router as search_router
 from enterprise_rag_platform.config import get_settings
+from enterprise_rag_platform.api.exception_handlers import (
+    unhandled_exception_handler,
+)
 
 
 def create_app() -> FastAPI:
@@ -28,3 +31,7 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+app.add_exception_handler(
+    Exception,
+    unhandled_exception_handler,
+)
