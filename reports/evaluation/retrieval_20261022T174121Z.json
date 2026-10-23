@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-10-22T17:41:21.113620+00:00",
+  "evaluation_queries": 6,
+  "metrics": {
+    "vector_search": {
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 0.6666666666666666
+    },
+    "reranked_search": {
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 1.0
+    }
+  },
+  "improvement": {
+    "hit_rate_at_5": 0.0,
+    "mrr_at_5": 0.333333
+  }
+}

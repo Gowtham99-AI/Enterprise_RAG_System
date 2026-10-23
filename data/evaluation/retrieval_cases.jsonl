@@ -1,0 +1,7 @@
+
+{"query":"How many annual leave days do full-time employees receive?","relevant_filenames":["sample_leave_policy.txt"],"top_k":5}
+{"query":"How far in advance should employees request annual leave?","relevant_filenames":["sample_leave_policy.txt"],"top_k":5}
+{"query":"What is the annual leave carry-forward limit?","relevant_filenames":["sample_leave_policy.txt"],"top_k":5}
+{"query":"Who must approve annual leave?","relevant_filenames":["sample_leave_policy.txt"],"top_k":5}
+{"query":"What should employees do for urgent leave?","relevant_filenames":["sample_leave_policy.txt"],"top_k":5}
+{"query":"What does the company handbook say about annual leave?","relevant_filenames":["handbook.txt","sample_leave_policy.txt"],"top_k":5}
