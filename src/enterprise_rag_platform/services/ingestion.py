@@ -1,9 +1,13 @@
 
 import hashlib
+import logging
+from time import perf_counter
 
 from sqlalchemy.orm import Session
 
 from enterprise_rag_platform.models import Document
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_content_hash(text_content: str) -> str:
@@ -27,12 +31,36 @@ def persist_document_text(
         status="pending",
     )
 
+    start_time = perf_counter()
+
     try:
         db.add(document)
         db.commit()
         db.refresh(document)
     except Exception:
         db.rollback()
+        logger.exception(
+            "Document persistence failed",
+            extra={
+                "operation": "document_persistence",
+                "duration_ms": round(
+                    (perf_counter() - start_time) * 1000,
+                    2,
+                ),
+            },
+        )
         raise
+
+    logger.info(
+        "Document persisted successfully",
+        extra={
+            "operation": "document_persistence",
+            "duration_ms": round(
+                (perf_counter() - start_time) * 1000,
+                2,
+            ),
+            "document_id": document.id,
+        },
+    )
 
     return document
