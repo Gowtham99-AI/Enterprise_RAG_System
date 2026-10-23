@@ -1,4 +1,7 @@
 
+import logging
+from time import perf_counter
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -6,6 +9,8 @@ from enterprise_rag_platform.config import get_settings
 from enterprise_rag_platform.models import Document, DocumentChunk
 from enterprise_rag_platform.services.embedding import EmbeddingService
 from enterprise_rag_platform.services.reranking import RerankingService
+
+logger = logging.getLogger(__name__)
 
 
 def search_chunks_with_distance(
@@ -21,6 +26,8 @@ def search_chunks_with_distance(
 
     if not 1 <= top_k <= 50:
         raise ValueError("top_k must be between 1 and 50.")
+
+    start_time = perf_counter()
 
     service = embedding_service or EmbeddingService()
     query_embedding = service.embed_texts([query])[0]
@@ -61,6 +68,19 @@ def search_chunks_with_distance(
 
         seen_content.add(normalized_content)
         results.append((chunk, score))
+
+    logger.info(
+        "Vector retrieval completed",
+        extra={
+            "operation": "vector_retrieval",
+            "duration_ms": round(
+                (perf_counter() - start_time) * 1000,
+                2,
+            ),
+            "candidate_count": len(rows),
+            "result_count": len(results),
+        },
+    )
 
     return results
 
@@ -109,12 +129,31 @@ def search_chunks_with_reranking(
     )
 
     if not candidates:
+        logger.info(
+            "Reranking skipped because retrieval returned no candidates",
+            extra={
+                "operation": "retrieval_reranking",
+                "candidate_count": 0,
+                "result_count": 0,
+            },
+        )
         return []
 
     service = reranking_service or RerankingService()
 
-    return service.rerank_chunks(
+    reranked_results = service.rerank_chunks(
         query,
         [chunk for chunk, _ in candidates],
         top_k=top_k,
     )
+
+    logger.info(
+        "Retrieval and reranking completed",
+        extra={
+            "operation": "retrieval_reranking",
+            "candidate_count": len(candidates),
+            "result_count": len(reranked_results),
+        },
+    )
+
+    return reranked_results
