@@ -1,3 +1,4 @@
+
 import json
 import logging
 import sys
@@ -10,6 +11,19 @@ correlation_id_context: ContextVar[str | None] = ContextVar(
     default=None,
 )
 
+STRUCTURED_LOG_FIELDS = (
+    "method",
+    "path",
+    "status_code",
+    "duration_ms",
+    "operation",
+    "document_id",
+    "candidate_count",
+    "result_count",
+    "source_count",
+    "stage",
+)
+
 
 class JsonFormatter(logging.Formatter):
     """Format log records as structured JSON."""
@@ -20,18 +34,16 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
-            "correlation_id": getattr(
-                record,
-                "correlation_id",
-                None,
-            )
-            or correlation_id_context.get(),
+            "correlation_id": (
+                getattr(record, "correlation_id", None)
+                or correlation_id_context.get()
+            ),
         }
 
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        for field in ("method", "path","status_code", "duration_ms", "operation", "document_id", "candidate_count", "result_count", "source_count", "stage"):
+        for field in STRUCTURED_LOG_FIELDS:
             value = getattr(record, field, None)
             if value is not None:
                 log_data[field] = value

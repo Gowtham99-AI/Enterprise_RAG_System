@@ -1,0 +1,34 @@
+{
+  "endpoint": "http://127.0.0.1:8000/api/v1/search",
+  "generated_at": "2026-10-23T12:09:47.915108+00:00",
+  "warmup_requests_per_mode": 1,
+  "measured_requests_per_mode": 5,
+  "results": {
+    "vector_search": {
+      "successful_requests": 5,
+      "failed_requests": 0,
+      "errors": [],
+      "latency": {
+        "sample_count": 5.0,
+        "average_ms": 1656.74,
+        "median_ms": 1610.19,
+        "p95_ms": 1841.29,
+        "min_ms": 1531.41,
+        "max_ms": 1841.29
+      }
+    },
+    "reranked_search": {
+      "successful_requests": 5,
+      "failed_requests": 0,
+      "errors": [],
+      "latency": {
+        "sample_count": 5.0,
+        "average_ms": 4355.35,
+        "median_ms": 4342.04,
+        "p95_ms": 4717.75,
+        "min_ms": 4081.59,
+        "max_ms": 4717.75
+      }
+    }
+  }
+}

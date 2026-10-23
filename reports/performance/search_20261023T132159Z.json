@@ -1,0 +1,54 @@
+{
+  "endpoint": "http://127.0.0.1:8000/api/v1/search",
+  "generated_at": "2026-10-23T13:21:27.121700+00:00",
+  "query": "How many annual leave days are provided?",
+  "timeout_seconds": 180.0,
+  "warmup_requests_per_mode": 1,
+  "measured_requests_per_mode": 5,
+  "configuration": {
+    "vector_search": {
+      "rerank": false,
+      "top_k": 5,
+      "candidate_k": 10
+    },
+    "reranked_search": {
+      "rerank": true,
+      "top_k": 5,
+      "candidate_k": 10
+    }
+  },
+  "results": {
+    "vector_search": {
+      "successful_requests": 5,
+      "failed_requests": 0,
+      "warmup_failures": 0,
+      "warmup_errors": [],
+      "errors": [],
+      "complete": true,
+      "latency": {
+        "sample_count": 5.0,
+        "average_ms": 1224.54,
+        "median_ms": 1227.33,
+        "p95_ms": 1253.52,
+        "min_ms": 1204.33,
+        "max_ms": 1253.52
+      }
+    },
+    "reranked_search": {
+      "successful_requests": 5,
+      "failed_requests": 0,
+      "warmup_failures": 0,
+      "warmup_errors": [],
+      "errors": [],
+      "complete": true,
+      "latency": {
+        "sample_count": 5.0,
+        "average_ms": 4307.33,
+        "median_ms": 3955.19,
+        "p95_ms": 6480.99,
+        "min_ms": 3329.14,
+        "max_ms": 6480.99
+      }
+    }
+  }
+}

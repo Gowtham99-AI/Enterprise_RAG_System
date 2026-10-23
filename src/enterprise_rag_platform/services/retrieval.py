@@ -30,7 +30,20 @@ def search_chunks_with_distance(
     start_time = perf_counter()
 
     service = embedding_service or EmbeddingService()
+
+    embedding_start = perf_counter()
     query_embedding = service.embed_texts([query])[0]
+
+    logger.info(
+        "Query embedding completed",
+        extra={
+            "operation": "query_embedding",
+            "duration_ms": round(
+                (perf_counter() - embedding_start) * 1000,
+                2,
+            ),
+        },
+    )
 
     distance = DocumentChunk.embedding.cosine_distance(
         query_embedding
@@ -47,7 +60,21 @@ def search_chunks_with_distance(
         .limit(top_k)
     )
 
+    database_start = perf_counter()
     rows = db.execute(statement).all()
+
+    logger.info(
+        "Vector database query completed",
+        extra={
+            "operation": "vector_database_query",
+            "duration_ms": round(
+                (perf_counter() - database_start) * 1000,
+                2,
+            ),
+            "candidate_count": len(rows),
+        },
+    )
+
     max_distance = get_settings().rag_max_distance
 
     results: list[tuple[DocumentChunk, float]] = []
