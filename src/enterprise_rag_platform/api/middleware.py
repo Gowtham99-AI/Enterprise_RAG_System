@@ -1,5 +1,5 @@
-
 import logging
+from time import perf_counter
 from uuid import uuid4
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -35,8 +35,14 @@ class CorrelationIdMiddleware:
 
         scope.setdefault("state", {})["correlation_id"] = correlation_id
 
+        start_time = perf_counter()
+        status_code = 500
+
         async def send_with_correlation_id(message: Message) -> None:
+            nonlocal status_code
+
             if message["type"] == "http.response.start":
+                status_code = message["status"]
                 response_headers = list(message.get("headers", []))
                 response_headers.append(
                     (b"x-correlation-id", correlation_id.encode("ascii"))
@@ -45,8 +51,40 @@ class CorrelationIdMiddleware:
 
             await send(message)
 
+        token = correlation_id_context.set(correlation_id)
+
         try:
-            token = correlation_id_context.set(correlation_id)
             await self.app(scope, receive, send_with_correlation_id)
+        except Exception:
+            logger.exception(
+                "Request failed",
+                extra={
+                    "method": scope.get("method"),
+                    "path": scope.get("path"),
+                    "status_code": status_code,
+                    "duration_ms": round(
+                        (perf_counter() - start_time) * 1000,
+                        2,
+                    ),
+                    "correlation_id": correlation_id,
+                    "operation": "http_request",
+                },
+            )
+            raise
+        else:
+            logger.info(
+                "Request completed",
+                extra={
+                    "method": scope.get("method"),
+                    "path": scope.get("path"),
+                    "status_code": status_code,
+                    "duration_ms": round(
+                        (perf_counter() - start_time) * 1000,
+                        2,
+                    ),
+                    "correlation_id": correlation_id,
+                    "operation": "http_request",
+                },
+            )
         finally:
             correlation_id_context.reset(token)

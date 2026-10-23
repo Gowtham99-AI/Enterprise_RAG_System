@@ -31,7 +31,7 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        for field in ("method", "path", "duration_ms", "operation"):
+        for field in ("method", "path","status_code", "duration_ms", "operation"):
             value = getattr(record, field, None)
             if value is not None:
                 log_data[field] = value
