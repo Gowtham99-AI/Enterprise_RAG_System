@@ -1,4 +1,7 @@
 
+import logging
+from time import perf_counter
+
 from sqlalchemy.orm import Session
 
 from enterprise_rag_platform.schemas.answer import (
@@ -10,6 +13,8 @@ from enterprise_rag_platform.services.llm import OllamaService
 from enterprise_rag_platform.services.retrieval import (
     search_chunks_with_distance,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class RAGService:
@@ -37,43 +42,59 @@ class RAGService:
         if not 1 <= top_k <= 20:
             raise ValueError("top_k must be between 1 and 20.")
 
-        matches = search_chunks_with_distance(
-            db,
-            question,
-            top_k=top_k,
-            embedding_service=self.embedding_service,
-        )
+        start_time = perf_counter()
 
-        if not matches:
-            return AnswerResponse(
-                question=question,
-                answer=(
-                    "I couldn't find relevant information in the "
-                    "available documents to answer this question."
-                ),
-                sources=[],
+        try:
+            matches = search_chunks_with_distance(
+                db,
+                question,
+                top_k=top_k,
+                embedding_service=self.embedding_service,
             )
 
-        sources = [
-            AnswerSource(
-                document_id=chunk.document_id,
-                chunk_id=chunk.id,
-                filename=chunk.document.filename,
-                chunk_index=chunk.chunk_index,
-                distance=distance,
-                content=chunk.content,
+            if not matches:
+                logger.info(
+                    "RAG answer returned without relevant sources",
+                    extra={
+                        "operation": "rag_answer",
+                        "duration_ms": round(
+                            (perf_counter() - start_time) * 1000,
+                            2,
+                        ),
+                        "source_count": 0,
+                        "stage": "no_context",
+                    },
+                )
+
+                return AnswerResponse(
+                    question=question,
+                    answer=(
+                        "I couldn't find relevant information in the "
+                        "available documents to answer this question."
+                    ),
+                    sources=[],
+                )
+
+            sources = [
+                AnswerSource(
+                    document_id=chunk.document_id,
+                    chunk_id=chunk.id,
+                    filename=chunk.document.filename,
+                    chunk_index=chunk.chunk_index,
+                    distance=distance,
+                    content=chunk.content,
+                )
+                for chunk, distance in matches
+            ]
+
+            context = "\n\n".join(
+                f"[S{index}]\n"
+                f"Source filename: {source.filename}\n"
+                f"Chunk content:\n{source.content}"
+                for index, source in enumerate(sources, start=1)
             )
-            for chunk, distance in matches
-        ]
 
-        context = "\n\n".join(
-            f"[S{index}]\n"
-            f"Source filename: {source.filename}\n"
-            f"Chunk content:\n{source.content}"
-            for index, source in enumerate(sources, start=1)
-        )
-
-        prompt = f"""
+            prompt = f"""
 You are an enterprise knowledge assistant.
 
 Answer the user's question using only the source material below.
@@ -99,10 +120,39 @@ User question:
 Answer:
 """.strip()
 
-        answer = self.llm_service.generate(prompt)
+            answer = self.llm_service.generate(prompt)
 
-        return AnswerResponse(
-            question=question,
-            answer=answer,
-            sources=sources,
+            response = AnswerResponse(
+                question=question,
+                answer=answer,
+                sources=sources,
+            )
+
+        except Exception:
+            logger.exception(
+                "RAG answer generation failed",
+                extra={
+                    "operation": "rag_answer",
+                    "duration_ms": round(
+                        (perf_counter() - start_time) * 1000,
+                        2,
+                    ),
+                    "stage": "answer_generation",
+                },
+            )
+            raise
+
+        logger.info(
+            "RAG answer generated successfully",
+            extra={
+                "operation": "rag_answer",
+                "duration_ms": round(
+                    (perf_counter() - start_time) * 1000,
+                    2,
+                ),
+                "source_count": len(sources),
+                "stage": "completed",
+            },
         )
+
+        return response
