@@ -12,9 +12,14 @@ async def unhandled_exception_handler(
 ) -> JSONResponse:
     logger.exception(
         "Unhandled exception while processing request",
-        extra={
-            "path": request.url.path,
+            extra={
             "method": request.method,
+            "correlation_id": getattr(
+                request.state,
+                "correlation_id",
+                None,
+            ),
+            "path": request.url.path,
         },
     )
 

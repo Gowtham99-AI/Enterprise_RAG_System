@@ -9,6 +9,7 @@ from enterprise_rag_platform.config import get_settings
 from enterprise_rag_platform.api.exception_handlers import (
     unhandled_exception_handler,
 )
+from enterprise_rag_platform.api.middleware import CorrelationIdMiddleware
 
 
 def create_app() -> FastAPI:
@@ -35,3 +36,4 @@ app.add_exception_handler(
     Exception,
     unhandled_exception_handler,
 )
+app.add_middleware(CorrelationIdMiddleware)
