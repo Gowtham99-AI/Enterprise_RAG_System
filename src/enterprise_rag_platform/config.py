@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ollama_timeout_seconds: float = 120.0
     rag_top_k: int = 5
     rag_max_distance: float = 0.80
+    log_level: str = "INFO"
     database_url: str = (
         "postgresql+psycopg://rag_user:change_me@localhost:5433/enterprise_rag"
     )

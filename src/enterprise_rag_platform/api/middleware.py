@@ -4,6 +4,8 @@ from uuid import uuid4
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from enterprise_rag_platform.core.logging import correlation_id_context
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,4 +45,8 @@ class CorrelationIdMiddleware:
 
             await send(message)
 
-        await self.app(scope, receive, send_with_correlation_id)
+        try:
+            token = correlation_id_context.set(correlation_id)
+            await self.app(scope, receive, send_with_correlation_id)
+        finally:
+            correlation_id_context.reset(token)
