@@ -168,12 +168,25 @@ def search_chunks_with_reranking(
 
     service = reranking_service or RerankingService()
 
+    reranking_start = perf_counter()
     reranked_results = service.rerank_chunks(
         query,
         [chunk for chunk, _ in candidates],
         top_k=top_k,
     )
 
+    logger.info(
+    "Reranking completed",
+    extra={
+        "operation": "reranking",
+        "duration_ms": round(
+            (perf_counter() - reranking_start) * 1000,
+            2,
+        ),
+        "candidate_count": len(candidates),
+        "result_count": len(reranked_results),
+    },
+    )
     logger.info(
         "Retrieval and reranking completed",
         extra={

@@ -47,12 +47,7 @@ def persist_document_chunks(
         for index, content in enumerate(chunks)
     ]
 
-    try:
-        db.add(document)
-        db.commit()
-        db.refresh(document)
-    except Exception:
-        db.rollback()
-        raise
+    db.add(document)
+    db.flush()
 
     return document.chunks

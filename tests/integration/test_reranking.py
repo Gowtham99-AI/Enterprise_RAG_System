@@ -31,7 +31,10 @@ class FakeRerankingModel:
             "Annual leave policy": 0.9,
         }
         return np.array(
-            [scores[pair[1]] for pair in pairs],
+            [
+                scores[pair[1].rstrip(".")]
+                for pair in pairs
+            ],
             dtype=np.float32,
         )
 
@@ -54,7 +57,7 @@ def test_retrieval_returns_reranked_chunks(db_session: Session) -> None:
         DocumentChunk(
             chunk_index=1,
             content="Annual leave policy",
-            embedding=[0.0, 1.0] + [0.0] * 382,
+            embedding=[0.8, 0.6] + [0.0] * 382,
             embedding_model=EmbeddingService.MODEL_NAME,
             chunk_metadata={},
         ),

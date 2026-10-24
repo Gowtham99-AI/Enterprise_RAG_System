@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 from sqlalchemy.orm import Session
+from unittest.mock import patch
 
 from enterprise_rag_platform.models import Document, DocumentChunk
 from enterprise_rag_platform.services.embedding import EmbeddingService
@@ -66,3 +67,77 @@ def test_search_rejects_invalid_top_k(
 def test_search_rejects_blank_query(db_session: Session) -> None:
     with pytest.raises(ValueError, match="must not be empty"):
         search_chunks(db_session, "   ")
+
+
+def test_search_excludes_unprocessed_documents(
+    db_session: Session,
+) -> None:
+    document = Document(
+        filename="pending-document.txt",
+        content_type="text/plain",
+        raw_text="Annual leave policy.",
+        status="pending",
+    )
+    document.chunks = [
+        DocumentChunk(
+            chunk_index=0,
+            content="Annual leave policy.",
+            embedding=[1.0] + [0.0] * 383,
+            embedding_model=EmbeddingService.MODEL_NAME,
+            chunk_metadata={},
+        )
+    ]
+    db_session.add(document)
+    db_session.commit()
+
+    results = search_chunks(
+        db_session,
+        "Annual leave",
+        top_k=5,
+        embedding_service=EmbeddingService(model=FakeEmbeddingModel()),
+    )
+
+    assert all(
+        chunk.document.status == "processed"
+        for chunk in results
+    )
+    assert all(
+        chunk.document_id != document.id
+        for chunk in results
+    )
+
+
+def test_search_returns_empty_list_when_no_documents_match(
+    db_session: Session,
+) -> None:
+    document = Document(
+        filename="unrelated-document.txt",
+        content_type="text/plain",
+        raw_text="Office parking policy.",
+        status="processed",
+    )
+    document.chunks = [
+        DocumentChunk(
+            chunk_index=0,
+            content="Office parking policy.",
+            embedding=[0.0, 1.0] + [0.0] * 382,
+            embedding_model=EmbeddingService.MODEL_NAME,
+            chunk_metadata={},
+        )
+    ]
+    db_session.add(document)
+    db_session.commit()
+
+    with patch(
+        "enterprise_rag_platform.services.retrieval.get_settings"
+    ) as mock_get_settings:
+        mock_get_settings.return_value.rag_max_distance = 0.5
+
+        results = search_chunks(
+            db_session,
+            "Annual leave",
+            top_k=5,
+            embedding_service=EmbeddingService(model=FakeEmbeddingModel()),
+        )
+
+    assert results == []
